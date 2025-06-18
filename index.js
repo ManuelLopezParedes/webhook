@@ -14,42 +14,31 @@ app.get("/", (req, res) => {
 })
 
 app.post("/api/webhook", async (req, res) => {
-    try {
-        console.log("Webhook recibido de OpenPay:", req.body)
-        
-        // Verificar que la solicitud viene de OpenPay
-        // (Implementa verificación de firma si es necesario)
-        
-        const eventType = req.body.type;
-        const paymentData = req.body.transaction;
-        
-        if (eventType === 'charge.succeeded') {
-            const webhookData = {
-                body: req.body,
-                headers: req.headers,
-                query: req.query,
-                fechaDeRegistro: new Date(),
-                status: 'success',
-                paymentId: paymentData.id,
-                amount: paymentData.amount,
-                currency: paymentData.currency,
-                customer: paymentData.customer
-            }
-            
-            await agregarAsync(webhookData);
-            
-            // Aquí puedes agregar lógica adicional para actualizar tu base de datos principal
-            // con la información del pago
-            
-            return res.status(200).json({ received: true });
-        }
-        
-        res.status(200).json({ received: true, message: 'Evento no manejado' });
-    } catch (error) {
-        console.error("Error al procesar webhook:", error);
-        res.status(500).json({ error: error.message });
+    console.log("Datos recibidos:", req.body);
+
+    // 1. Verificación inicial de OpenPay (handshake)
+    if (req.body.type === 'verification') {
+        console.log("OpenPay verificando el webhook...");
+        return res.status(200).json({ 
+            challenge: req.body.challenge  // ¡OpenPay espera este campo!
+        });
     }
-})
+
+    // 2. Evento real (ej: pago exitoso)
+    if (req.body.type === 'charge.succeeded') {
+        const webhookData = {
+            body: req.body,
+            headers: req.headers,
+            fechaDeRegistro: new Date(),
+            paymentId: req.body.transaction.id
+        };
+        await agregarAsync(webhookData);
+        return res.status(200).json({ success: true });
+    }
+
+    // 3. Otros eventos no manejados
+    res.status(200).end();
+});
 
 app.listen(3000, () => {
     console.log("http://localhost:3000")
