@@ -1,8 +1,9 @@
 //Configuración de base de datos
 const { MongoClient } = require("mongodb");
-//const uri = "mongodb://root:123456@localhost:27017/?authMechanism=DEFAULT";
-const uri = "mongodb+srv://admin:12345@cluster0.ycbdhog.mongodb.net/"
-const client = new MongoClient(uri);
+require('dotenv').config();
+
+var url = process.env.url
+const client = new MongoClient(url);
 const dataBase = "webhook";
 const collectionName = "webhooks";
 
